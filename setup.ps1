@@ -16,48 +16,6 @@ function Test-InternetConnection {
     }
 }
 
-# Function to install Nerd Fonts
-function Install-NerdFonts {
-    param (
-        [string]$FontName = "CascadiaCode",
-        [string]$FontDisplayName = "CaskaydiaCove NF",
-        [string]$Version = "3.2.1"
-    )
-
-    try {
-        [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing")
-        $fontFamilies = (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name
-        if ($fontFamilies -notcontains "${FontDisplayName}") {
-            $fontZipUrl = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${Version}/${FontName}.zip"
-            $zipFilePath = "$env:TEMP\${FontName}.zip"
-            $extractPath = "$env:TEMP\${FontName}"
-
-            $webClient = New-Object System.Net.WebClient
-            $webClient.DownloadFileAsync((New-Object System.Uri($fontZipUrl)), $zipFilePath)
-
-            while ($webClient.IsBusy) {
-                Start-Sleep -Seconds 2
-            }
-
-            Expand-Archive -Path $zipFilePath -DestinationPath $extractPath -Force
-            $destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
-            Get-ChildItem -Path $extractPath -Recurse -Filter "*.ttf" | ForEach-Object {
-                If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
-                    $destination.CopyHere($_.FullName, 0x10)
-                }
-            }
-
-            Remove-Item -Path $extractPath -Recurse -Force
-            Remove-Item -Path $zipFilePath -Force
-        } else {
-            Write-Host "Font ${FontDisplayName} already installed"
-        }
-    }
-    catch {
-        Write-Error "Failed to download or install ${FontDisplayName} font. Error: $_"
-    }
-}
-
 # Check for internet connectivity before proceeding
 if (-not (Test-InternetConnection)) {
     break
@@ -79,7 +37,7 @@ if (!(Test-Path -Path $PROFILE -PathType Leaf)) {
             New-Item -Path $profilePath -ItemType "directory"
         }
 
-        Invoke-RestMethod https://github.com/ChrisTitusTech/powershell-profile/raw/main/Microsoft.PowerShell_profile.ps1 -OutFile $PROFILE
+        Invoke-RestMethod https://github.com/jogotcha/powershell-profile/raw/main/Microsoft.PowerShell_profile.ps1 -OutFile $PROFILE
         Write-Host "The profile @ [$PROFILE] has been created."
         Write-Host "If you want to make any personal changes or customizations, please do so at [$profilePath\Profile.ps1] as there is an updater in the installed profile which uses the hash to update the profile and will lead to loss of changes"
     }
@@ -88,10 +46,10 @@ if (!(Test-Path -Path $PROFILE -PathType Leaf)) {
     }
 }
 else {
-    try {
+    try {   
         $backupPath = Join-Path (Split-Path $PROFILE) "oldprofile.ps1"
         Move-Item -Path $PROFILE -Destination $backupPath -Force
-        Invoke-RestMethod https://github.com/ChrisTitusTech/powershell-profile/raw/main/Microsoft.PowerShell_profile.ps1 -OutFile $PROFILE
+        Invoke-RestMethod https://github.com/jogotcha/powershell-profile/raw/main/Microsoft.PowerShell_profile.ps1 -OutFile $PROFILE
         Write-Host "✅ PowerShell profile at [$PROFILE] has been updated."
         Write-Host "📦 Your old profile has been backed up to [$backupPath]"
         Write-Host "⚠️ NOTE: Please back up any persistent components of your old profile to [$HOME\Documents\PowerShell\Profile.ps1] as there is an updater in the installed profile which uses the hash to update the profile and will lead to loss of changes"
@@ -110,7 +68,7 @@ catch {
 }
 
 # Font Install
-Install-NerdFonts -FontName "CascadiaCode" -FontDisplayName "CaskaydiaCove NF"
+oh-my-posh font install CascadiaCode
 
 # Final check and message to the user
 if ((Test-Path -Path $PROFILE) -and (winget list --name "OhMyPosh" -e) -and ($fontFamilies -contains "CaskaydiaCove NF")) {
@@ -121,7 +79,7 @@ if ((Test-Path -Path $PROFILE) -and (winget list --name "OhMyPosh" -e) -and ($fo
 
 # Choco install
 try {
-    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 }
 catch {
     Write-Error "Failed to install Chocolatey. Error: $_"
@@ -134,6 +92,15 @@ try {
 catch {
     Write-Error "Failed to install Terminal Icons module. Error: $_"
 }
+
+# PSKubectlCompletion Install
+try {
+    Install-Module -Name PSKubectlCompletion -Repository PSGallery -Force
+}
+catch {
+    Write-Error "Failed to install PSKubectlCompletion module. Error: $_"
+}
+
 # zoxide Install
 try {
     winget install -e --id ajeetdsouza.zoxide

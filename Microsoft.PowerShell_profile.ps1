@@ -15,7 +15,7 @@ $updateInterval = 7
 ############                                                                                                         ############
 ############                DO NOT MODIFY THIS FILE. THIS FILE IS HASHED AND UPDATED AUTOMATICALLY.                  ############
 ############                    ANY CHANGES MADE TO THIS FILE WILL BE OVERWRITTEN BY COMMITS TO                      ############
-############                       https://github.com/ChrisTitusTech/powershell-profile.git.                         ############
+############                       https://github.com/jogotcha/powershell-profile.git.                               ############
 ############                                                                                                         ############
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
 ############                                                                                                         ############
@@ -58,7 +58,7 @@ if ($repo_root_Override){
     # then use it instead
     $repo_root = $repo_root_Override
 } else {
-    $repo_root = "https://raw.githubusercontent.com/ChrisTitusTech"
+    $repo_root = "https://raw.githubusercontent.com/jogotcha"
 }
 
 # Define the path to the file that stores the last execution time
@@ -117,10 +117,13 @@ if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
     Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
 }
 Import-Module -Name Terminal-Icons
+
 $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 if (Test-Path($ChocolateyProfile)) {
     Import-Module "$ChocolateyProfile"
 }
+
+Import-Module -Name PSKubectlCompletion
 
 # Check for Profile Updates
 function Update-Profile {
@@ -254,24 +257,9 @@ function Test-CommandExists {
     return $exists
 }
 
-# Editor Configuration
-if ($EDITOR_Override){
-    $EDITOR = $EDITOR_Override
-} else {
-    $EDITOR = if (Test-CommandExists nvim) { 'nvim' }
-          elseif (Test-CommandExists pvim) { 'pvim' }
-          elseif (Test-CommandExists vim) { 'vim' }
-          elseif (Test-CommandExists vi) { 'vi' }
-          elseif (Test-CommandExists code) { 'code' }
-          elseif (Test-CommandExists codium) { 'codium' }
-          elseif (Test-CommandExists notepad++) { 'notepad++' }
-          elseif (Test-CommandExists sublime_text) { 'sublime_text' }
-          else { 'notepad' }
-    Set-Alias -Name vim -Value $EDITOR
-}
 # Quick Access to Editing the Profile
 function Edit-Profile {
-    vim $PROFILE.CurrentUserAllHosts
+    code $PROFILE.CurrentUserAllHosts
 }
 Set-Alias -Name ep -Value Edit-Profile
 
@@ -287,7 +275,7 @@ function Get-PubIP { (Invoke-WebRequest http://ifconfig.me/ip).Content }
 
 # Open WinUtil full-release
 function winutil {
-    irm https://christitus.com/win | iex
+    Invoke-RestMethod https://christitus.com/win | Invoke-Expression
 }
 
 # Open WinUtil dev-release
@@ -303,11 +291,12 @@ function winutildev {
 
 # System Utilities
 function admin {
+    $cwd = (Get-Location).ProviderPath
     if ($args.Count -gt 0) {
         $argList = $args -join ' '
-        Start-Process wt -Verb runAs -ArgumentList "pwsh.exe -NoExit -Command $argList"
+        Start-Process wt -Verb runAs -ArgumentList @('-d', $cwd, 'pwsh.exe', '-NoExit', '-Command', $argList)
     } else {
-        Start-Process wt -Verb runAs
+        Start-Process wt -Verb runAs -ArgumentList @('-d', $cwd, 'pwsh.exe', '-NoExit')
     }
 }
 
@@ -363,32 +352,7 @@ function unzip ($file) {
     $fullFile = Get-ChildItem -Path $pwd -Filter $file | ForEach-Object { $_.FullName }
     Expand-Archive -Path $fullFile -DestinationPath $pwd
 }
-function hb {
-    if ($args.Length -eq 0) {
-        Write-Error "No file path specified."
-        return
-    }
-    
-    $FilePath = $args[0]
-    
-    if (Test-Path $FilePath) {
-        $Content = Get-Content $FilePath -Raw
-    } else {
-        Write-Error "File path does not exist."
-        return
-    }
-    
-    $uri = "http://bin.christitus.com/documents"
-    try {
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Body $Content -ErrorAction Stop
-        $hasteKey = $response.key
-        $url = "http://bin.christitus.com/$hasteKey"
-	    Set-Clipboard $url
-        Write-Output "$url copied to clipboard."
-    } catch {
-        Write-Error "Failed to upload the document. Error: $_"
-    }
-}
+
 function grep($regex, $dir) {
     if ( $dir ) {
         Get-ChildItem $dir | select-string $regex
@@ -478,37 +442,9 @@ function dtop {
     Set-Location -Path $dtop
 }
 
-# Simplified Process Management
-function k9 { Stop-Process -Name $args[0] }
-
 # Enhanced Listing
 function la { Get-ChildItem | Format-Table -AutoSize }
 function ll { Get-ChildItem -Force | Format-Table -AutoSize }
-
-# Git Shortcuts
-function gs { git status }
-
-function ga { git add . }
-
-function gc { param($m) git commit -m "$m" }
-
-function gpush { git push }
-
-function gpull { git pull }
-
-function g { __zoxide_z github }
-
-function gcl { git clone "$args" }
-
-function gcom {
-    git add .
-    git commit -m "$args"
-}
-function lazyg {
-    git add .
-    git commit -m "$args"
-    git push
-}
 
 # Quick Access to System Information
 function sysinfo { Get-ComputerInfo }
@@ -608,10 +544,21 @@ $scriptblock = {
 }
 Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock $scriptblock
 
+Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+        [Console]::InputEncoding = [Console]::OutputEncoding = $OutputEncoding = [System.Text.Utf8Encoding]::new()
+        $Local:word = $wordToComplete.Replace('"', '""')
+        $Local:ast = $commandAst.ToString().Replace('"', '""')
+        winget complete --word="$Local:word" --commandline "$Local:ast" --position $cursorPosition | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+}
+
+# Oh-My-Posh Initialization
 if (Get-Command -Name "Get-Theme_Override" -ErrorAction SilentlyContinue){
     Get-Theme_Override;
 } else {
-    oh-my-posh init pwsh --config https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/cobalt2.omp.json | Invoke-Expression
+    oh-my-posh init pwsh | Invoke-Expression
 }
 
 if (Get-Command zoxide -ErrorAction SilentlyContinue) {
@@ -635,16 +582,6 @@ $($PSStyle.Foreground.Yellow)=======================$($PSStyle.Reset)
 $($PSStyle.Foreground.Green)Update-Profile$($PSStyle.Reset) - Checks for profile updates from a remote repository and updates if necessary.
 $($PSStyle.Foreground.Green)Update-PowerShell$($PSStyle.Reset) - Checks for the latest PowerShell release and updates if a new version is available.
 $($PSStyle.Foreground.Green)Edit-Profile$($PSStyle.Reset) - Opens the current user's profile for editing using the configured editor.
-
-$($PSStyle.Foreground.Cyan)Git Shortcuts$($PSStyle.Reset)
-$($PSStyle.Foreground.Yellow)=======================$($PSStyle.Reset)
-$($PSStyle.Foreground.Green)g$($PSStyle.Reset) - Changes to the GitHub directory.
-$($PSStyle.Foreground.Green)ga$($PSStyle.Reset) - Shortcut for 'git add .'.
-$($PSStyle.Foreground.Green)gc$($PSStyle.Reset) <message> - Shortcut for 'git commit -m'.
-$($PSStyle.Foreground.Green)gcom$($PSStyle.Reset) <message> - Adds all changes and commits with the specified message.
-$($PSStyle.Foreground.Green)gp$($PSStyle.Reset) - Shortcut for 'git push'.
-$($PSStyle.Foreground.Green)gs$($PSStyle.Reset) - Shortcut for 'git status'.
-$($PSStyle.Foreground.Green)lazyg$($PSStyle.Reset) <message> - Adds all changes, commits with the specified message, and pushes to the remote repository.
 
 $($PSStyle.Foreground.Cyan)Shortcuts$($PSStyle.Reset)
 $($PSStyle.Foreground.Yellow)=======================$($PSStyle.Reset)
@@ -696,8 +633,8 @@ Use '$($PSStyle.Foreground.Magenta)Show-Help$($PSStyle.Reset)' to display this h
     Write-Host $helpText
 }
 
-if (Test-Path "$PSScriptRoot\CTTcustom.ps1") {
-    Invoke-Expression -Command "& `"$PSScriptRoot\CTTcustom.ps1`""
+if (Test-Path "$PSScriptRoot\custom.ps1") {
+    Invoke-Expression -Command "& `"$PSScriptRoot\custom.ps1`""
 }
 
 Write-Host "$($PSStyle.Foreground.Yellow)Use 'Show-Help' to display help$($PSStyle.Reset)"
