@@ -71,6 +71,8 @@ catch {
 oh-my-posh font install CascadiaCode
 
 # Final check and message to the user
+[void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing")
+$fontFamilies = (New-Object System.Drawing.Text.InstalledFontCollection).Families.Name
 if ((Test-Path -Path $PROFILE) -and (winget list --name "OhMyPosh" -e) -and ($fontFamilies -contains "CaskaydiaCove NF")) {
     Write-Host "Setup completed successfully. Please restart your PowerShell session to apply changes."
 } else {
