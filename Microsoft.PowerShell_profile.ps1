@@ -554,6 +554,25 @@ Register-ArgumentCompleter -Native -CommandName winget -ScriptBlock {
         }
 }
 
+# Visual Studio DevShell Integration
+$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+if (-not (Test-Path -Path $vswhere)) {
+    Write-Warning "vswhere not found at '$vswhere'. Visual Studio DevShell not loaded."
+} else {
+    $vs = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -format json | ConvertFrom-Json | Select-Object -First 1
+    if (-not $vs) {
+        Write-Warning "No Visual Studio instance found. Visual Studio DevShell not loaded."
+    } else {
+        $devShellDll = Join-Path $vs.installationPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll'
+        if (-not (Test-Path -Path $devShellDll)) {
+            Write-Warning "DevShell DLL not found at '$devShellDll'. Visual Studio DevShell not loaded."
+        } else {
+            Import-Module $devShellDll
+            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation
+        }
+    }
+}
+
 # Oh-My-Posh Initialization
 if (Get-Command -Name "Get-Theme_Override" -ErrorAction SilentlyContinue){
     Get-Theme_Override;
