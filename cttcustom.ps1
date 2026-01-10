@@ -63,4 +63,43 @@ function env {
     $items | Format-Table -AutoSize Name, Value
 }
 
+function cleanupmodules {
+    $modulePaths = @(
+        "$env:USERPROFILE\Documents\PowerShell\Modules",
+        "$env:USERPROFILE\Documents\WindowsPowerShell\Modules",
+        "$env:ProgramFiles\PowerShell\Modules",
+        "$env:ProgramFiles\WindowsPowerShell\Modules"
+    ) | Where-Object { Test-Path $_ }
+
+    foreach ($path in $modulePaths) {
+        Write-Host "`nScanning: $path" -ForegroundColor Cyan
+
+        # Get all module folders
+        $modules = Get-ChildItem -Path $path -Directory -ErrorAction SilentlyContinue
+        foreach ($module in $modules) {
+            # Get all version subfolders (valid semantic versions only)
+            $versions = Get-ChildItem -Path $module.FullName -Directory |
+                Where-Object { $_.Name -match '^\d+(\.\d+){0,3}$' } |
+                Sort-Object { [version]$_.Name } -Descending
+
+            if ($versions.Count -gt 1) {
+                $latest = $versions[0]
+                $oldVersions = $versions | Select-Object -Skip 1
+
+                Write-Host "Module '$($module.Name)' has $($versions.Count) versions. Keeping: $($latest.Name)" -ForegroundColor Yellow
+
+                foreach ($old in $oldVersions) {
+                    try {
+                        Remove-Item -Path $old.FullName -Recurse -Force -ErrorAction Stop
+                        Write-Host "Deleted: $($old.FullName)" -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Warning "Failed to delete $($old.FullName): $_"
+                    }
+                }
+            }
+        }
+    }
+}
+
 mise activate pwsh | Out-String | Invoke-Expression
