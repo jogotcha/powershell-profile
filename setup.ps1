@@ -135,7 +135,7 @@ catch {
 }
 
 # Download Oh My Posh theme locally
-$themeInstalled = Install-OhMyPoshTheme -ThemeName "cobalt2"
+#$themeInstalled = Install-OhMyPoshTheme -ThemeName "cobalt2"
 
 # Font Install
 oh-my-posh font install CascadiaCode
@@ -185,4 +185,13 @@ try {
 }
 catch {
     Write-Error "Failed to install zoxide. Error: $_"
+}
+
+# mise Install
+try {
+    winget install jdx.mise --accept-source-agreements --accept-package-agreements
+    Write-Host "mise installed successfully."
+}
+catch {
+    Write-Error "Failed to install mise. Error: $_"
 }
