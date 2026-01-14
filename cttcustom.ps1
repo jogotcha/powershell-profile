@@ -16,7 +16,7 @@ $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer
 if (-not (Test-Path -Path $vswhere)) {
     Write-Warning "vswhere not found at '$vswhere'. Visual Studio DevShell not loaded."
 } else {
-    $vs = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -format json | ConvertFrom-Json | Select-Object -First 1
+    $vs = & $vswhere -prerelease -latest -products * -requires Microsoft.Component.MSBuild -format json | ConvertFrom-Json | Select-Object -First 1
     if (-not $vs) {
         Write-Warning "No Visual Studio instance found. Visual Studio DevShell not loaded."
     } else {
@@ -24,6 +24,8 @@ if (-not (Test-Path -Path $vswhere)) {
         if (-not (Test-Path -Path $devShellDll)) {
             Write-Warning "DevShell DLL not found at '$devShellDll'. Visual Studio DevShell not loaded."
         } else {
+            Import-Module $devShellDll | Out-Null
+            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation | Out-Null
             Import-Module $devShellDll
             Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation -DevCmdArguments """-arch=x64 -host_arch=x64 -no_logo"""
         }
@@ -62,6 +64,11 @@ function env {
 
     $items | Format-Table -AutoSize Name, Value
 }
+
+$MyModulePath = "C:\Users\ZITZJ\Source\repos\PowerShellTools\Modules"
+$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$MyModulePath"
+Import-Module ema-tools
+New-Alias -Name 'TpfTools' -Value 'C:\Tools\IGEM2\TpfTools\TpfTools.exe' -Scope Global -Force
 
 function cleanupmodules {
     $modulePaths = @(
