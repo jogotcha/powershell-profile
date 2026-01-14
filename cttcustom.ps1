@@ -25,7 +25,7 @@ if (-not (Test-Path -Path $vswhere)) {
             Write-Warning "DevShell DLL not found at '$devShellDll'. Visual Studio DevShell not loaded."
         } else {
             Import-Module $devShellDll | Out-Null
-            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation -DevCmdArguments """-arch=x64 -host_arch=x64 -no_logo""" | Out-Null
+            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation | Out-Null
         }
     }
 }
