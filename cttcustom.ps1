@@ -65,11 +65,6 @@ function env {
     $items | Format-Table -AutoSize Name, Value
 }
 
-$MyModulePath = "C:\Users\ZITZJ\Source\repos\PowerShellTools\Modules"
-$env:PSModulePath = $env:PSModulePath + "$([System.IO.Path]::PathSeparator)$MyModulePath"
-Import-Module ema-tools
-New-Alias -Name 'TpfTools' -Value 'C:\Tools\IGEM2\TpfTools\TpfTools.exe' -Scope Global -Force
-
 function cleanupmodules {
     $modulePaths = @(
         "$env:USERPROFILE\Documents\PowerShell\Modules",
@@ -107,6 +102,22 @@ function cleanupmodules {
             }
         }
     }
+}
+
+$MyModulePath = "C:\Users\ZITZJ\Source\repos\PowerShellTools\Modules"
+$sep = [System.IO.Path]::PathSeparator
+
+if (Test-Path -LiteralPath $MyModulePath) {
+    $existingPaths = $env:PSModulePath -split [regex]::Escape($sep)
+    if ($existingPaths -notcontains $MyModulePath) {
+        $env:PSModulePath = $env:PSModulePath + "$sep$MyModulePath"
+    }
+    Import-Module ema-tools
+}
+
+$TpfToolsExe = 'C:\Tools\IGEM2\TpfTools\TpfTools.exe'
+if (Test-Path -LiteralPath $TpfToolsExe) {
+    New-Alias -Name 'TpfTools' -Value $TpfToolsExe -Scope Global -Force
 }
 
 mise activate pwsh | Out-String | Invoke-Expression
