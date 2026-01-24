@@ -16,6 +16,7 @@ $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer
 if (-not (Test-Path -Path $vswhere)) {
     Write-Warning "vswhere not found at '$vswhere'. Visual Studio DevShell not loaded."
 } else {
+    Set-Alias vswhere -value $vswhere
     $vs = & $vswhere -prerelease -latest -products * -requires Microsoft.Component.MSBuild -format json | ConvertFrom-Json | Select-Object -First 1
     if (-not $vs) {
         Write-Warning "No Visual Studio instance found. Visual Studio DevShell not loaded."
