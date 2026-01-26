@@ -140,6 +140,8 @@ catch {
 try {
     winget install -e --id ajeetdsouza.zoxide --accept-source-agreements --accept-package-agreements
     Write-Host "zoxide installed successfully."
+    winget install junegunn.fzf --accept-source-agreements --accept-package-agreements
+    Write-Host "fzf installed successfully."
 }
 catch {
     Write-Error "Failed to install zoxide. Error: $_"
