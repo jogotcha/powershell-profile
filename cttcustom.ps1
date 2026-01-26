@@ -121,4 +121,15 @@ if (Test-Path -LiteralPath $TpfToolsExe) {
     New-Alias -Name 'TpfTools' -Value $TpfToolsExe -Scope Global -Force
 }
 
+
+function fluxrefresh {
+    flux reconcile source git cluster -n flux-system
+}
+
+# https://github.com/ajeetdsouza/zoxide
+# zoxide for my german keyboard layout
+$env:_ZO_FZF_OPTS = "--height=~100% --layout=reverse --border"
+function x { z } 
+function xx { zi }
+
 mise activate pwsh | Out-String | Invoke-Expression
