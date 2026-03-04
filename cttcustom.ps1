@@ -129,7 +129,7 @@ function fluxrefresh {
 # https://github.com/ajeetdsouza/zoxide
 # zoxide for my german keyboard layout
 $env:_ZO_FZF_OPTS = "--height=~100% --layout=reverse --border"
-function x { z } 
-function xx { zi }
+Set-Alias -Name x -Value z -PassThru | Out-Null
+Set-Alias -Name xx -Value zi -PassThru | Out-Null
 
 mise activate pwsh | Out-String | Invoke-Expression
