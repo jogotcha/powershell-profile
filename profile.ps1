@@ -18,7 +18,7 @@ function Set-EnvVar {
 }
 
 function Get-Theme_Override {
-    oh-my-posh init pwsh | Invoke-Expression
-    #oh-my-posh init pwsh --config "$env:USERPROFILE\source\repos\powershell-profile\.mytheme.omp.json" | Invoke-Expression
+    #oh-my-posh init pwsh | Invoke-Expression
+    oh-my-posh init pwsh --config "$env:USERPROFILE\source\repos\powershell-profile\cobalt2.omp.json" | Invoke-Expression
     #New-Alias -Name 'Set-PoshContext' -Value 'Set-EnvVar' -Scope Global -Force
 }

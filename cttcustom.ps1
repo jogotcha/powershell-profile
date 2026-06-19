@@ -26,9 +26,7 @@ if (-not (Test-Path -Path $vswhere)) {
             Write-Warning "DevShell DLL not found at '$devShellDll'. Visual Studio DevShell not loaded."
         } else {
             Import-Module $devShellDll | Out-Null
-            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation | Out-Null
-            Import-Module $devShellDll
-            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation -DevCmdArguments """-arch=x64 -host_arch=x64 -no_logo"""
+            Enter-VsDevShell -VsInstanceId $vs.instanceId -SkipAutomaticLocation -DevCmdArguments """-arch=x64 -host_arch=x64 -no_logo""" | Out-Null
         }
     }
 }
@@ -121,7 +119,6 @@ if (Test-Path -LiteralPath $TpfToolsExe) {
     New-Alias -Name 'TpfTools' -Value $TpfToolsExe -Scope Global -Force
 }
 
-
 function fluxrefresh {
     flux reconcile source git cluster -n flux-system
 }
@@ -129,7 +126,7 @@ function fluxrefresh {
 # https://github.com/ajeetdsouza/zoxide
 # zoxide for my german keyboard layout
 $env:_ZO_FZF_OPTS = "--height=~100% --layout=reverse --border"
-Set-Alias -Name x -Value z -PassThru | Out-Null
-Set-Alias -Name xx -Value zi -PassThru | Out-Null
+New-Alias -Name x -Value z -PassThru | Out-Null
+New-Alias -Name xx -Value zi -PassThru | Out-Null
 
 mise activate pwsh | Out-String | Invoke-Expression
